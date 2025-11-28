@@ -7,6 +7,7 @@ import { Navigation } from "@/components/Navigation";
 import Index from "./pages/Index";
 import PatientPage from "./pages/PatientPage";
 import DoctorPage from "./pages/DoctorPage";
+import PharmacyPage from "./pages/PharmacyPage";
 import BedPage from "./pages/BedPage";
 import AmbulancePage from "./pages/AmbulancePage";
 import NotFound from "./pages/NotFound";
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/patient" element={<PatientPage />} />
           <Route path="/doctor" element={<DoctorPage />} />
+          <Route path="/pharmacy" element={<PharmacyPage />} />
           <Route path="/beds" element={<BedPage />} />
           <Route path="/ambulance" element={<AmbulancePage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
