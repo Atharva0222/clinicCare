@@ -7,6 +7,8 @@ export interface Patient {
   id: string;
   name: string;
   age: number;
+  email?: string;
+  phone?: string;
   issue: string;
   preferredDoctor: string;
   timeSlot: string;

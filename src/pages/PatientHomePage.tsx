@@ -1,26 +1,28 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Activity, Bed, Ambulance, Heart, Clock, Users, Stethoscope, Pill } from "lucide-react";
+import { Calendar, Bed, Ambulance, Heart, Clock, Users, Stethoscope, Pill, FileText } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 
-const Index = () => {
+const PatientHomePage = () => {
   const { t } = useLanguage();
+  const { user } = useAuth();
 
-  const features = [
+  const patientFeatures = [
     {
       icon: Calendar,
-      title: t('home.patientAppointments'),
+      title: t('home.bookAppointment'),
       description: t('home.patientAppointmentsDesc'),
       link: "/patient",
       color: "text-primary",
     },
     {
-      icon: Activity,
-      title: t('home.doctorDashboard'),
-      description: t('home.doctorDashboardDesc'),
-      link: "/doctor",
-      color: "text-secondary",
+      icon: FileText,
+      title: t('home.myAppointments'),
+      description: "View your appointment history and status",
+      link: "/patient",
+      color: "text-blue-600",
     },
     {
       icon: Pill,
@@ -63,7 +65,7 @@ const Index = () => {
             </div>
           </div>
           <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            {t('home.title')}
+            {t('home.welcomeBack')}, {user?.name}!
           </h1>
           <p className="text-xl text-muted-foreground mb-8">
             {t('home.subtitle')}
@@ -75,10 +77,10 @@ const Index = () => {
                 {t('home.bookAppointment')}
               </Button>
             </Link>
-            <Link to="/doctor">
+            <Link to="/ambulance">
               <Button size="lg" variant="outline" className="gap-2">
-                <Activity className="h-5 w-5" />
-                {t('home.doctorPortal')}
+                <Ambulance className="h-5 w-5" />
+                {t('home.emergencyAmbulance')}
               </Button>
             </Link>
           </div>
@@ -100,9 +102,12 @@ const Index = () => {
           })}
         </div>
 
-        {/* Features */}
+        {/* Patient Features */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-center mb-8">{t('home.ourServices')}</h2>
+        </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature) => {
+          {patientFeatures.map((feature) => {
             const Icon = feature.icon;
             return (
               <Link key={feature.title} to={feature.link}>
@@ -157,4 +162,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default PatientHomePage;
