@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Activity, Bed, Ambulance, Heart, Clock, Users, Stethoscope } from "lucide-react";
+import { Calendar, Activity, Bed, Ambulance, Heart, Clock, Users, Stethoscope, Pill } from "lucide-react";
 
 const Index = () => {
   const features = [
@@ -15,9 +15,16 @@ const Index = () => {
     {
       icon: Activity,
       title: "Doctor Dashboard",
-      description: "Manage appointments, view smart queue, and patient care",
+      description: "Manage appointments, write prescriptions, and patient care",
       link: "/doctor",
       color: "text-secondary",
+    },
+    {
+      icon: Pill,
+      title: "Pharmacy",
+      description: "Prescription management and medicine inventory tracking",
+      link: "/pharmacy",
+      color: "text-success",
     },
     {
       icon: Bed,
@@ -91,7 +98,7 @@ const Index = () => {
         </div>
 
         {/* Features */}
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature) => {
             const Icon = feature.icon;
             return (

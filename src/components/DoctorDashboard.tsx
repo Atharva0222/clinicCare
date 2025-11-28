@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { patients } from "@/data/clinicData";
 import { Patient, AppointmentStatus, UrgencyLevel } from "@/types/clinic";
 import { toast } from "sonner";
-import { Check, X, UserCheck, Clock, AlertCircle, Activity } from "lucide-react";
+import { Check, X, UserCheck, Clock, AlertCircle, Activity, FileText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getTodayAppointments, sortSmartQueue } from "@/utils/queueAlgorithm";
+import { PrescriptionForm } from "@/components/PrescriptionForm";
 
 const urgencyColors: Record<UrgencyLevel, string> = {
   low: "bg-muted text-muted-foreground",
@@ -25,6 +26,8 @@ const statusColors: Record<AppointmentStatus, string> = {
 
 export const DoctorDashboard = () => {
   const [, setRefresh] = useState(0); // Force re-render
+  const [prescriptionDialogOpen, setPrescriptionDialogOpen] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
   const handleAction = (patientId: string, action: AppointmentStatus) => {
     const patient = patients.find((p) => p.id === patientId);
@@ -46,6 +49,11 @@ export const DoctorDashboard = () => {
   const pendingAppointments = patients.filter((p) => p.status === "pending");
   const todayQueue = sortSmartQueue(getTodayAppointments(patients));
   const allAppointments = patients.filter((p) => p.status !== "pending");
+
+  const openPrescriptionDialog = (patient: Patient) => {
+    setSelectedPatient(patient);
+    setPrescriptionDialogOpen(true);
+  };
 
   const renderPatientCard = (patient: Patient, showActions: boolean = false) => (
     <Card key={patient.id} className="mb-4">
@@ -104,14 +112,37 @@ export const DoctorDashboard = () => {
         )}
 
         {showActions && patient.status === "accepted" && (
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => handleAction(patient.id, "checked")}
+              className="flex-1"
+            >
+              <UserCheck className="h-4 w-4 mr-1" />
+              Mark as Checked
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => openPrescriptionDialog(patient)}
+              className="flex-1"
+            >
+              <FileText className="h-4 w-4 mr-1" />
+              Write Prescription
+            </Button>
+          </div>
+        )}
+
+        {showActions && patient.status === "checked" && (
           <Button
             size="sm"
-            variant="secondary"
-            onClick={() => handleAction(patient.id, "checked")}
+            variant="outline"
+            onClick={() => openPrescriptionDialog(patient)}
             className="w-full"
           >
-            <UserCheck className="h-4 w-4 mr-1" />
-            Mark as Checked
+            <FileText className="h-4 w-4 mr-1" />
+            Write Prescription
           </Button>
         )}
       </CardContent>
@@ -119,8 +150,20 @@ export const DoctorDashboard = () => {
   );
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      <Card className="mb-6">
+    <>
+      {selectedPatient && (
+        <PrescriptionForm
+          patient={selectedPatient}
+          open={prescriptionDialogOpen}
+          onClose={() => {
+            setPrescriptionDialogOpen(false);
+            setSelectedPatient(null);
+          }}
+        />
+      )}
+
+      <div className="w-full max-w-4xl mx-auto">
+        <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-6 w-6 text-primary" />
@@ -197,6 +240,7 @@ export const DoctorDashboard = () => {
           )}
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </>
   );
 };

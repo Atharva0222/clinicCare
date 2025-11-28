@@ -1,12 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Calendar, Activity, Bed, Ambulance, Home } from "lucide-react";
+import { Calendar, Activity, Bed, Ambulance, Home, Pill } from "lucide-react";
 
 const navItems = [
   { path: "/", label: "Home", icon: Home },
   { path: "/patient", label: "Book Appointment", icon: Calendar },
   { path: "/doctor", label: "Doctor Dashboard", icon: Activity },
+  { path: "/pharmacy", label: "Pharmacy", icon: Pill },
   { path: "/beds", label: "Bed Management", icon: Bed },
   { path: "/ambulance", label: "Ambulance", icon: Ambulance },
 ];
