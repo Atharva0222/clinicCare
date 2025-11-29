@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface PatientBookingProps {
   onAppointmentBooked?: () => void;
@@ -19,6 +20,7 @@ import { Invoice, PaymentDetails, InvoiceItem } from "@/types/payment";
 import { servicePricing, TAX_RATE, generateInvoiceNumber, invoices } from "@/data/paymentData";
 
 export const PatientBooking: React.FC<PatientBookingProps> = ({ onAppointmentBooked }) => {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: "",
     age: "",
@@ -29,23 +31,58 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onAppointmentBoo
     timeSlot: "",
     urgency: "medium" as UrgencyLevel,
   });
+  const [customSymptom, setCustomSymptom] = useState("");
   const [showPayment, setShowPayment] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const [currentInvoice, setCurrentInvoice] = useState<Invoice | null>(null);
   const [pendingAppointment, setPendingAppointment] = useState<any>(null);
 
+  const commonSymptoms = [
+    t('symptoms.fever'),
+    t('symptoms.cough'),
+    t('symptoms.coldFlu'),
+    t('symptoms.headache'),
+    t('symptoms.stomachache'),
+    t('symptoms.bodyPain'),
+    t('symptoms.chestPain'),
+    t('symptoms.breathingDifficulty'),
+    t('symptoms.dizziness'),
+    t('symptoms.nausea'),
+    t('symptoms.skinRash'),
+    t('symptoms.eyeProblems'),
+    t('symptoms.earPain'),
+    t('symptoms.toothache'),
+    t('symptoms.backPain'),
+    t('symptoms.jointPain'),
+    t('symptoms.diabetes'),
+    t('symptoms.bloodPressure'),
+    t('symptoms.injury'),
+    t('symptoms.checkup'),
+    t('symptoms.other'),
+  ];
+
+  const handleSymptomChange = (value: string) => {
+    setFormData({ ...formData, issue: value });
+    if (value !== t('symptoms.other')) {
+      setCustomSymptom("");
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Get final issue value (use custom symptom if "Other" is selected)
+    const finalIssue = formData.issue === t('symptoms.other') ? customSymptom : formData.issue;
+
     // Validation
-    if (!formData.name || !formData.age || !formData.email || !formData.phone || !formData.issue || !formData.preferredDoctor || !formData.timeSlot) {
-      toast.error("Please fill in all fields");
+    if (!formData.name || !formData.age || !formData.email || !formData.phone || !finalIssue || !formData.preferredDoctor || !formData.timeSlot) {
+      toast.error(t('booking.fillAllFields'));
       return;
     }
 
     const age = parseInt(formData.age);
     if (isNaN(age) || age < 0 || age > 150) {
-      toast.error("Please enter a valid age");
+      toast.error(t('booking.validAge'));
       return;
     }
 
@@ -56,7 +93,7 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onAppointmentBoo
       age,
       email: formData.email.trim(),
       phone: formData.phone.trim(),
-      issue: formData.issue.trim(),
+      issue: finalIssue.trim(),
       preferredDoctor: formData.preferredDoctor,
       timeSlot: formData.timeSlot,
       urgency: formData.urgency,
@@ -135,8 +172,8 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onAppointmentBoo
     setCurrentInvoice(invoice);
     setShowInvoice(true);
 
-    toast.success("Appointment booked successfully!", {
-      description: `Your appointment is pending doctor approval. Appointment ID: ${pendingAppointment.id.slice(0, 8)}`,
+    toast.success(t('booking.bookingSuccess'), {
+      description: `${t('booking.pendingApproval')} ${t('booking.appointmentId')}: ${pendingAppointment.id.slice(0, 8)}`,
     });
 
     // Reset form
@@ -150,6 +187,7 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onAppointmentBoo
       timeSlot: "",
       urgency: "medium",
     });
+    setCustomSymptom("");
     setPendingAppointment(null);
 
     // Notify parent component
@@ -163,20 +201,20 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onAppointmentBoo
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Calendar className="h-6 w-6 text-primary" />
-          Book Appointment
+          {t('booking.title')}
         </CardTitle>
-        <CardDescription>Fill in your details to schedule a consultation</CardDescription>
+        <CardDescription>{t('booking.subtitle')}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="name" className="flex items-center gap-2">
               <User className="h-4 w-4" />
-              Patient Name
+              {t('booking.patientName')}
             </Label>
             <Input
               id="name"
-              placeholder="Enter full name"
+              placeholder={t('booking.enterName')}
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               maxLength={100}
@@ -185,11 +223,11 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onAppointmentBoo
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="age">Age</Label>
+              <Label htmlFor="age">{t('booking.age')}</Label>
               <Input
                 id="age"
                 type="number"
-                placeholder="Enter age"
+                placeholder={t('booking.enterAge')}
                 value={formData.age}
                 onChange={(e) => setFormData({ ...formData, age: e.target.value })}
                 min="0"
@@ -197,11 +235,11 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onAppointmentBoo
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
+              <Label htmlFor="phone">{t('booking.phone')}</Label>
               <Input
                 id="phone"
                 type="tel"
-                placeholder="Enter phone"
+                placeholder={t('booking.enterPhone')}
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               />
@@ -209,29 +247,47 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onAppointmentBoo
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t('booking.email')}</Label>
             <Input
               id="email"
               type="email"
-              placeholder="Enter email address"
+              placeholder={t('booking.enterEmail')}
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="issue">Medical Issue / Reason</Label>
-            <Input
-              id="issue"
-              placeholder="Describe your symptoms or reason for visit"
+            <Label htmlFor="issue">{t('booking.issue')}</Label>
+            <Select
               value={formData.issue}
-              onChange={(e) => setFormData({ ...formData, issue: e.target.value })}
-              maxLength={200}
-            />
+              onValueChange={handleSymptomChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('booking.selectSymptom')} />
+              </SelectTrigger>
+              <SelectContent>
+                {commonSymptoms.map((symptom) => (
+                  <SelectItem key={symptom} value={symptom}>
+                    {symptom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {formData.issue === t('symptoms.other') && (
+              <Input
+                id="customSymptom"
+                placeholder={t('booking.describeSymptom')}
+                value={customSymptom}
+                onChange={(e) => setCustomSymptom(e.target.value)}
+                maxLength={200}
+                className="mt-2"
+              />
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="urgency">Urgency Level</Label>
+            <Label htmlFor="urgency">{t('booking.urgency')}</Label>
             <Select
               value={formData.urgency}
               onValueChange={(value: UrgencyLevel) => setFormData({ ...formData, urgency: value })}
@@ -240,10 +296,10 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onAppointmentBoo
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="low">Low - Routine checkup</SelectItem>
-                <SelectItem value="medium">Medium - Standard consultation</SelectItem>
-                <SelectItem value="high">High - Urgent attention needed</SelectItem>
-                <SelectItem value="critical">Critical - Emergency</SelectItem>
+                <SelectItem value="low">{t('booking.urgencyLow')}</SelectItem>
+                <SelectItem value="medium">{t('booking.urgencyMedium')}</SelectItem>
+                <SelectItem value="high">{t('booking.urgencyHigh')}</SelectItem>
+                <SelectItem value="critical">{t('booking.urgencyCritical')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -251,14 +307,14 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onAppointmentBoo
           <div className="space-y-2">
             <Label htmlFor="doctor" className="flex items-center gap-2">
               <Stethoscope className="h-4 w-4" />
-              Preferred Doctor
+              {t('booking.preferredDoctor')}
             </Label>
             <Select
               value={formData.preferredDoctor}
               onValueChange={(value) => setFormData({ ...formData, preferredDoctor: value })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select a doctor" />
+                <SelectValue placeholder={t('booking.selectDoctor')} />
               </SelectTrigger>
               <SelectContent>
                 {doctors.map((doc) => (
@@ -273,7 +329,7 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onAppointmentBoo
           <div className="space-y-2">
             <Label htmlFor="timeSlot" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Preferred Time Slot
+              {t('booking.timeSlot')}
             </Label>
             <Input
               id="timeSlot"
@@ -285,7 +341,7 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onAppointmentBoo
 
           <Button type="submit" className="w-full" size="lg">
             <CreditCard className="h-5 w-5 mr-2" />
-            Continue to Payment
+            {t('booking.continuePayment')}
           </Button>
         </form>
 
@@ -293,11 +349,11 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onAppointmentBoo
         <Dialog open={showPayment} onOpenChange={setShowPayment}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Complete Payment</DialogTitle>
+              <DialogTitle>{t('payment.title')}</DialogTitle>
               <DialogDescription>
                 {pendingAppointment && (
                   <>
-                    Consultation fee for {formData.urgency} urgency appointment
+                    {t('booking.consultationFee')} {formData.urgency} {t('booking.urgencyAppointment')}
                   </>
                 )}
               </DialogDescription>
@@ -328,8 +384,8 @@ export const PatientBooking: React.FC<PatientBookingProps> = ({ onAppointmentBoo
         <Dialog open={showInvoice} onOpenChange={setShowInvoice}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Invoice</DialogTitle>
-              <DialogDescription>Your appointment booking invoice</DialogDescription>
+              <DialogTitle>{t('invoice.title')}</DialogTitle>
+              <DialogDescription>{t('booking.invoiceDescription')}</DialogDescription>
             </DialogHeader>
             {currentInvoice && <InvoiceDisplay invoice={currentInvoice} />}
           </DialogContent>

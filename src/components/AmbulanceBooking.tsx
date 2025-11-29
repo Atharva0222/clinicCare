@@ -1,28 +1,22 @@
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ambulances, getAvailableAmbulanceCount, generateId } from "@/data/clinicData";
+import { ambulances, getAvailableAmbulanceCount } from "@/data/clinicData";
 import { toast } from "sonner";
-import { Ambulance as AmbulanceIcon, Navigation, CheckCircle, XCircle, Clock, MapPin, CreditCard } from "lucide-react";
+import { Ambulance as AmbulanceIcon, Navigation, CheckCircle, XCircle, Clock, MapPin } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { PaymentForm } from "@/components/PaymentForm";
-import { InvoiceDisplay } from "@/components/InvoiceDisplay";
-import { Invoice, PaymentDetails, InvoiceItem } from "@/types/payment";
-import { servicePricing, TAX_RATE, generateInvoiceNumber, calculateDistance, ambulanceLocations, invoices } from "@/data/paymentData";
+import { calculateDistance, ambulanceLocations } from "@/data/paymentData";
 
 export const AmbulanceBooking = () => {
+  const { t } = useLanguage();
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
-  const [showInvoice, setShowInvoice] = useState(false);
-  const [selectedAmbulance, setSelectedAmbulance] = useState<any>(null);
-  const [currentInvoice, setCurrentInvoice] = useState<Invoice | null>(null);
   const [, setRefresh] = useState(0);
 
   const availableCount = getAvailableAmbulanceCount();
@@ -52,31 +46,31 @@ export const AmbulanceBooking = () => {
             }
           });
 
-          toast.success("Location detected successfully");
+          toast.success(t('ambulance.locationSuccess'));
           setIsGettingLocation(false);
         },
         (error) => {
           console.error("Error getting location:", error);
-          toast.error("Could not get your location", {
-            description: "Using default distances. Please enable location services for accurate results.",
+          toast.error(t('ambulance.locationError'), {
+            description: t('ambulance.locationErrorDesc'),
           });
           setIsGettingLocation(false);
         }
       );
     } else {
-      toast.error("Geolocation is not supported by your browser");
+      toast.error(t('ambulance.geolocationNotSupported'));
       setIsGettingLocation(false);
     }
   };
 
   const handleBookAmbulance = () => {
     if (!patientName.trim()) {
-      toast.error("Please enter patient name");
+      toast.error(t('ambulance.enterPatientName'));
       return;
     }
 
     if (!patientPhone.trim()) {
-      toast.error("Please enter phone number");
+      toast.error(t('ambulance.enterPhoneNumber'));
       return;
     }
 
@@ -84,8 +78,8 @@ export const AmbulanceBooking = () => {
     const availableAmbulances = ambulances.filter((a) => a.available);
 
     if (availableAmbulances.length === 0) {
-      toast.error("No ambulances available", {
-        description: "All ambulances are currently dispatched",
+      toast.error(t('ambulance.noAvailable'), {
+        description: t('ambulance.allDispatched'),
       });
       return;
     }
@@ -93,76 +87,20 @@ export const AmbulanceBooking = () => {
     // Sort by distance and pick the nearest
     const nearestAmbulance = availableAmbulances.sort((a, b) => a.distanceKm - b.distanceKm)[0];
 
-    setSelectedAmbulance(nearestAmbulance);
-    setShowPayment(true);
-  };
-
-  const handlePaymentComplete = (payment: PaymentDetails) => {
-    if (!selectedAmbulance) return;
-
-    // Calculate distance-based pricing
-    const distanceCharge = selectedAmbulance.distanceKm * 50; // ₹50 per km
-    const basePrice = servicePricing.ambulance;
-    const totalBeforeTax = basePrice + distanceCharge;
-    const tax = totalBeforeTax * TAX_RATE;
-    const total = totalBeforeTax + tax;
-
-    // Create invoice items
-    const items: InvoiceItem[] = [
-      {
-        id: generateId(),
-        description: "Ambulance Service (Base Fee)",
-        quantity: 1,
-        unitPrice: basePrice,
-        total: basePrice,
-      },
-      {
-        id: generateId(),
-        description: `Distance Charge (${selectedAmbulance.distanceKm} km @ ₹50/km)`,
-        quantity: 1,
-        unitPrice: distanceCharge,
-        total: distanceCharge,
-      },
-    ];
-
-    // Create invoice
-    const invoice: Invoice = {
-      id: generateId(),
-      invoiceNumber: generateInvoiceNumber(),
-      patientName: patientName.trim(),
-      patientPhone: patientPhone.trim(),
-      serviceType: "ambulance",
-      serviceDescription: `Emergency Ambulance - ${selectedAmbulance.id} - Driver: ${selectedAmbulance.driverName}`,
-      items,
-      subtotal: totalBeforeTax,
-      tax,
-      discount: 0,
-      total,
-      payment,
-      issuedAt: new Date(),
-    };
-
-    invoices.push(invoice);
-
     // Reserve the ambulance
-    selectedAmbulance.available = false;
-    selectedAmbulance.reservedBy = patientName.trim();
-    selectedAmbulance.reservedAt = new Date();
+    nearestAmbulance.available = false;
+    nearestAmbulance.reservedBy = patientName.trim();
+    nearestAmbulance.reservedAt = new Date();
 
     // Calculate estimated arrival time (assuming 30 km/h average speed)
-    const estimatedMinutes = Math.ceil((selectedAmbulance.distanceKm / 30) * 60);
+    const estimatedMinutes = Math.ceil((nearestAmbulance.distanceKm / 30) * 60);
 
-    setShowPayment(false);
-    setCurrentInvoice(invoice);
-    setShowInvoice(true);
-
-    toast.success("Ambulance dispatched!", {
-      description: `${selectedAmbulance.id} with driver ${selectedAmbulance.driverName} is on the way. ETA: ${estimatedMinutes} minutes`,
+    toast.success(t('ambulance.dispatchSuccess'), {
+      description: `${t('ambulance.ambulanceId')}: ${nearestAmbulance.id}, ${t('ambulance.driver')}: ${nearestAmbulance.driverName}. ${t('ambulance.eta')}: ${estimatedMinutes} ${t('ambulance.minutes')}`,
     });
 
     setPatientName("");
     setPatientPhone("");
-    setSelectedAmbulance(null);
     setRefresh((prev) => prev + 1);
   };
 
@@ -173,8 +111,8 @@ export const AmbulanceBooking = () => {
       ambulance.reservedBy = undefined;
       ambulance.reservedAt = undefined;
 
-      toast.success("Ambulance returned to base", {
-        description: `${ambulance.id} is now available`,
+      toast.success(t('ambulance.returned'), {
+        description: `${ambulance.id} ${t('ambulance.nowAvailable')}`,
       });
 
       setRefresh((prev) => prev + 1);
@@ -192,10 +130,10 @@ export const AmbulanceBooking = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AmbulanceIcon className="h-6 w-6 text-urgent" />
-            Emergency Ambulance Service
+            {t('ambulance.title')}
           </CardTitle>
           <CardDescription>
-            Smart dispatch system - {availableCount} / {ambulances.length} ambulances available
+            {t('ambulance.smartDispatch')} - {availableCount} / {ambulances.length} {t('ambulance.available')}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -204,15 +142,14 @@ export const AmbulanceBooking = () => {
         <AlertDescription className="flex items-start gap-2">
           <Navigation className="h-4 w-4 text-urgent mt-0.5" />
           <span>
-            System automatically dispatches the <strong>nearest available ambulance</strong> when you
-            request emergency service.
+            {t('ambulance.autoDispatch')} <strong>{t('ambulance.nearestAmbulance')}</strong> {t('ambulance.whenRequest')}
           </span>
         </AlertDescription>
       </Alert>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Request Emergency Ambulance</CardTitle>
+          <CardTitle className="text-lg">{t('ambulance.requestEmergency')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <Button
@@ -223,23 +160,23 @@ export const AmbulanceBooking = () => {
           >
             <MapPin className="h-4 w-4 mr-2" />
             {userLocation
-              ? "Location Detected ✓"
+              ? t('ambulance.locationDetected')
               : isGettingLocation
-              ? "Getting Location..."
-              : "Detect My Location"}
+              ? t('ambulance.gettingLocation')
+              : t('ambulance.detectLocation')}
           </Button>
 
           {userLocation && (
             <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-              📍 Location: {userLocation.lat.toFixed(4)}, {userLocation.lon.toFixed(4)}
+              📍 {t('ambulance.location')}: {userLocation.lat.toFixed(4)}, {userLocation.lon.toFixed(4)}
             </div>
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="emergencyPatientName">Patient Name</Label>
+            <Label htmlFor="emergencyPatientName">{t('ambulance.patientName')}</Label>
             <Input
               id="emergencyPatientName"
-              placeholder="Enter patient name for emergency pickup"
+              placeholder={t('ambulance.enterPatientName')}
               value={patientName}
               onChange={(e) => setPatientName(e.target.value)}
               maxLength={100}
@@ -247,11 +184,11 @@ export const AmbulanceBooking = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="emergencyPatientPhone">Phone Number</Label>
+            <Label htmlFor="emergencyPatientPhone">{t('ambulance.phoneNumber')}</Label>
             <Input
               id="emergencyPatientPhone"
               type="tel"
-              placeholder="Enter contact number"
+              placeholder={t('ambulance.enterPhoneNumber')}
               value={patientPhone}
               onChange={(e) => setPatientPhone(e.target.value)}
               maxLength={15}
@@ -264,52 +201,14 @@ export const AmbulanceBooking = () => {
             size="lg"
             disabled={!patientName.trim() || !patientPhone.trim()}
           >
-            <CreditCard className="h-5 w-5 mr-2" />
-            Continue to Payment
+            <AmbulanceIcon className="h-5 w-5 mr-2" />
+            {t('ambulance.dispatchNearest')}
           </Button>
         </CardContent>
       </Card>
 
-      {/* Payment Dialog */}
-      <Dialog open={showPayment} onOpenChange={setShowPayment}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Complete Payment</DialogTitle>
-            <DialogDescription>
-              {selectedAmbulance && (
-                <>
-                  Ambulance: {selectedAmbulance.id} | Distance: {selectedAmbulance.distanceKm} km
-                </>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedAmbulance && (
-            <PaymentForm
-              amount={
-                servicePricing.ambulance +
-                selectedAmbulance.distanceKm * 50 +
-                (servicePricing.ambulance + selectedAmbulance.distanceKm * 50) * TAX_RATE
-              }
-              onPaymentComplete={handlePaymentComplete}
-              onCancel={() => setShowPayment(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Invoice Dialog */}
-      <Dialog open={showInvoice} onOpenChange={setShowInvoice}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Invoice</DialogTitle>
-            <DialogDescription>Your ambulance service invoice</DialogDescription>
-          </DialogHeader>
-          {currentInvoice && <InvoiceDisplay invoice={currentInvoice} />}
-        </DialogContent>
-      </Dialog>
-
       <div className="space-y-4">
-        <h3 className="font-semibold text-lg">Ambulance Fleet Status</h3>
+        <h3 className="font-semibold text-lg">{t('ambulance.fleetStatus')}</h3>
         {ambulances
           .sort((a, b) => a.distanceKm - b.distanceKm)
           .map((ambulance) => (
@@ -323,18 +222,18 @@ export const AmbulanceBooking = () => {
                         {ambulance.available ? (
                           <>
                             <CheckCircle className="h-3 w-3 mr-1" />
-                            Available
+                            {t('ambulance.available.status')}
                           </>
                         ) : (
                           <>
                             <XCircle className="h-3 w-3 mr-1" />
-                            Dispatched
+                            {t('ambulance.dispatched')}
                           </>
                         )}
                       </Badge>
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Driver: {ambulance.driverName}
+                      {t('ambulance.driver')}: {ambulance.driverName}
                     </p>
                     <div className="flex items-center gap-4 mt-2 text-sm">
                       <span className="flex items-center gap-1">
@@ -343,20 +242,20 @@ export const AmbulanceBooking = () => {
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-4 w-4 text-primary" />
-                        ETA: {calculateETA(ambulance.distanceKm)}
+                        {t('ambulance.eta')}: {calculateETA(ambulance.distanceKm)}
                       </span>
-                      <span className="text-muted-foreground">{ambulance.distanceKm} km away</span>
+                      <span className="text-muted-foreground">{ambulance.distanceKm} {t('ambulance.kmAway')}</span>
                     </div>
                   </div>
                 </div>
 
                 {!ambulance.available && ambulance.reservedBy && (
                   <div className="mb-4 p-3 bg-urgent/10 rounded-md text-sm">
-                    <p className="font-medium">On mission for:</p>
+                    <p className="font-medium">{t('ambulance.onMission')}</p>
                     <p className="text-muted-foreground">{ambulance.reservedBy}</p>
                     {ambulance.reservedAt && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        Dispatched: {new Date(ambulance.reservedAt).toLocaleString()}
+                        {t('ambulance.dispatchedAt')}: {new Date(ambulance.reservedAt).toLocaleString()}
                       </p>
                     )}
                   </div>
@@ -369,7 +268,7 @@ export const AmbulanceBooking = () => {
                     className="w-full"
                     size="sm"
                   >
-                    Mark as Returned
+                    {t('ambulance.markReturned')}
                   </Button>
                 )}
               </CardContent>
